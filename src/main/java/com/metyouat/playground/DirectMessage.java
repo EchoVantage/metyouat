@@ -3,10 +3,10 @@ package com.metyouat.playground;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 
-public class HelloTwitter {
+public class DirectMessage {
 	public static void main(String[] args) throws TwitterException {
 		Twitter twitter = Configurator.getTwitter();
 
-		twitter.updateStatus("@mikedeck, hello to you!");
+		twitter.sendDirectMessage("mikedeck", "This is a direct message sent from the API");
 	}
 }
