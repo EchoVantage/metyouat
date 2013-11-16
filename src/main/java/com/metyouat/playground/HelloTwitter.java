@@ -7,6 +7,6 @@ public class HelloTwitter {
 	public static void main(String[] args) throws TwitterException {
 		Twitter twitter = Configurator.getTwitter();
 
-		twitter.updateStatus("@mikedeck, hello to you!");
+		twitter.updateStatus("Testing...");
 	}
 }
