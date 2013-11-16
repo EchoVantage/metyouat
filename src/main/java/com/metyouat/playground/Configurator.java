@@ -367,4 +367,8 @@ public class Configurator implements UserstreamHandler{
 		config.start();
 		config.close();
 	}
+
+	public Twitter getTwitter() {
+		return twitter;
+	}
 }
