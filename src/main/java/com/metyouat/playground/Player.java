@@ -1,33 +1,20 @@
 package com.metyouat.playground;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import twitter4j.HashtagEntity;
 import twitter4j.Status;
-import twitter4j.StatusUpdate;
-import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.User;
-import twitter4j.UserMentionEntity;
 
 public class Player {
 	private User user;
-	private Session meta;
-	private Session current;
 	private long id;
-	private MasterSession master;
+	private Session session;
 	
-	public Player(long id, Session meta, MasterSession master) {
+	public Player(long id){
 		this.id = id;
-		this.meta = meta;
-		this.current = meta;
-		this.master = master;
    }
 
 	public void onStatus(Status status) throws IllegalStateException, TwitterException {
-		user = status.getUser();
-		current.addStatus(this, status, master);
+		session().addStatus(this, status);
 //		try {
 //			if(user.isFollowRequestSent()){
 //				user = twitter.createFriendship(user.getId());
@@ -76,27 +63,39 @@ public class Player {
 //			e.printStackTrace();
 //		}
    }
-
-	public Player setUser(User user) {
-		this.user = user;
-	   return this;
-   }
+	
+	public User user() {
+		assert user != null : "Missing user";
+		return user;
+	}
+	
+	public Session session() {
+		assert session != null : "Missing session";
+		return session;
+	}
+	
+	public void setSession(Session session) {
+		withSession(session);
+	}
+	
+	public void setUser(User user) {
+		withUser(user);
+	}
 
 	public long getId() {
 	   return id;
    }
 
-	public void masterFollow() throws TwitterException {
-		user = master.follow(id);
-   }
+	public Player withUser(User user) {
+		assert user != null : "missing user";
+		assert user.getId() == id : "Cannot change user on player";
+		this.user = user;
+		return this;
+	}
 
-	public void iMet(Status status) {
-	   // TODO Auto-generated method stub
-	   
-   }
-
-	public void changeGame(Status status) {
-	   // TODO Auto-generated method stub
-	   
-   }
+	public Player withSession(Session session) {
+		assert session != null : "missing session";
+		this.session = session;
+		return this;
+	}
 }

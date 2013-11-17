@@ -1,11 +1,10 @@
 package com.metyouat.playground;
 
+import static com.metyouat.playground.Bot.PlayerType.BYSTANDER;
 import static com.twitter.hbc.core.HttpHosts.USERSTREAM_HOST;
 import static java.util.Collections.singletonList;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,6 +23,7 @@ import twitter4j.UserStreamListener;
 import twitter4j.conf.ConfigurationBuilder;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.metyouat.playground.Bot.PlayerType;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.endpoint.UserstreamEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
@@ -42,8 +42,7 @@ public class Configurator implements UserstreamHandler{
 	private final Twitter twitter;
 	private final Twitter4jUserstreamClient client;
 	private ExecutorService executorService;
-	private ConcurrentMap<Long, Player> participants = new ConcurrentHashMap<>();
-	private MasterSession master;
+	private Bot bot;
 	
 	public Configurator() throws IllegalStateException, TwitterException {
 		ConfigurationBuilder configBuilder = new ConfigurationBuilder()
@@ -53,8 +52,10 @@ public class Configurator implements UserstreamHandler{
 	      .setOAuthAccessToken(accessToken)
 	      .setOAuthAccessTokenSecret(accessTokenSecret);
 		twitter = new TwitterFactory(configBuilder.build()).getInstance();
-		master = new MasterSession(twitter);
-		getPlayer(twitter.getId(), master);
+		bot = new Bot(twitter);
+		bot.withGame(PlayerType.BOT, BotSession.GAME);
+		bot.withGame(PlayerType.BYSTANDER, FriendSession.GAME);
+		bot.withGame(PlayerType.PLAYER, PlayerSession.GAME);
 
 		final BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>(100000);
 
@@ -100,7 +101,11 @@ public class Configurator implements UserstreamHandler{
 	@Override
 	public void onStatus(Status status) {
 		System.out.println("Status: "+status);
-		getPlayer(status.getUser()).onStatus(status);
+		try {
+			bot.getPlayer(status.getUser(), BYSTANDER).onStatus(status);
+		} catch (IllegalStateException | TwitterException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -176,7 +181,7 @@ public class Configurator implements UserstreamHandler{
 	public void onFriendList(long[] friendIds) {
 		System.out.println("friends: "+Arrays.toString(friendIds));
 		for(long id: friendIds){
-			participants.put(id, getPlayer(id, Session.PLAYING));
+			bot.createPlayer(id, PlayerType.PLAYER);
 		}
 	}
 	
@@ -238,21 +243,5 @@ public class Configurator implements UserstreamHandler{
 
 	public Twitter getTwitter() {
 		return twitter;
-	}
-	
-	private Player getPlayer(long id, Session meta){
-		Player player = participants.get(id);
-		if(player == null){
-			player = new Player(id, meta, master);
-			Player old = participants.putIfAbsent(id, player);
-			if(old != null){
-				player = old;
-			}
-		}
-		return player;
-	}
-
-	private Player getPlayer(User user){
-		return getPlayer(user.getId(), Session.INACTIVE).setUser(user);
 	}
 }
