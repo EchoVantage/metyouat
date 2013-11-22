@@ -4,12 +4,13 @@ import static com.metyouat.playground.Bot.PlayerType.BYSTANDER;
 import static com.twitter.hbc.core.HttpHosts.USERSTREAM_HOST;
 import static java.util.Collections.singletonList;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import scala.actors.threadpool.Arrays;
 import twitter4j.DirectMessage;
 import twitter4j.StallWarning;
 import twitter4j.Status;
@@ -33,7 +34,7 @@ import com.twitter.hbc.twitter4j.v3.handler.UserstreamHandler;
 import com.twitter.hbc.twitter4j.v3.message.DisconnectMessage;
 import com.twitter.hbc.twitter4j.v3.message.StallWarningMessage;
 
-public class Configurator implements UserstreamHandler{
+public class BotMain implements UserstreamHandler{
 	private static final String accessTokenSecret = "RtoK8BBVgLvFjXYtsGD27WRgfahQ5y6GIbPc0e0yj8WsV";
 	private static final String accessToken = "2197032072-Rbo2CNr61TAivXz0TNaJeTUlFJFGVld6D1QeFVm";
 	private static final String consumerSecret = "5P7ALzTr0MdrvhqCN815rdD31OSnrxDDhZeltrd7Duo";
@@ -44,7 +45,7 @@ public class Configurator implements UserstreamHandler{
 	private ExecutorService executorService;
 	private Bot bot;
 	
-	public Configurator() throws IllegalStateException, TwitterException {
+	public BotMain() throws IllegalStateException, TwitterException {
 		ConfigurationBuilder configBuilder = new ConfigurationBuilder()
 	      .setDebugEnabled(true)
 	      .setOAuthConsumerKey(consumerKey)
@@ -86,21 +87,28 @@ public class Configurator implements UserstreamHandler{
 		executorService.shutdown();
 		twitter.shutdown();
 	}
-	
-	
+
 	@Override
 	public void onException(Exception ex) {
-		ex.printStackTrace();
+		logEvent("Exception",map("ex",ex));
 	}
 	
+	private static void logEvent(String type, Map<String, Object> map) {
+		System.out.println(type+": "+map);
+   }
+
+	private static Map<String,Object> map(String key, Object value) {
+	   return map(new HashMap<String, Object>(), key, value);
+   }
+
 	@Override
 	public void onTrackLimitationNotice(int numberOfLimitedStatuses) {
-		System.out.println("Track limit: "+numberOfLimitedStatuses);
+		logEvent("TrackLimitationNotice",map("numberOfLimitedStatuses",numberOfLimitedStatuses));
 	}
 	
 	@Override
 	public void onStatus(Status status) {
-		System.out.println("Status: "+status);
+		logEvent("Status",map("status",status));
 		try {
 			bot.getPlayer(status.getUser(), BYSTANDER).onStatus(status);
 		} catch (IllegalStateException | TwitterException e) {
@@ -110,76 +118,81 @@ public class Configurator implements UserstreamHandler{
 
 	@Override
 	public void onStallWarning(StallWarning warning) {
-		System.out.println("Stall warning: "+warning);
+		logEvent("StallWarning",map("warning",warning));
 	}
 	
 	@Override
 	public void onScrubGeo(long userId, long upToStatusId) {
-		System.out.println("Scrub geo: "+userId+" "+upToStatusId);
+		logEvent("ScrubGeo",map(map("userId",userId),"upToStatusId",upToStatusId));
 	}
 	
+	private static Map<String, Object> map(Map<String, Object> map, String key, Object value) {
+		map.put(key, value);
+	   return map;
+   }
+
 	@Override
 	public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
-		System.out.println("Deletion: "+statusDeletionNotice);
+		logEvent("DeletionNotice", map("statusDeletionNotice",statusDeletionNotice));
 	}
 	
 	@Override
 	public void onUserProfileUpdate(User updatedUser) {
-		System.out.println("profile update: "+updatedUser);
+		logEvent("UserProfileUpdate",map("updatedUser",updatedUser));
 	}
 	
 	@Override
 	public void onUserListUpdate(User listOwner, UserList list) {
-		System.out.println("list update: "+listOwner+" "+list);
+		logEvent("UserListUpdate",map(map("listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListUnsubscription(User subscriber, User listOwner,
 			UserList list) {
-		System.out.println("list unsub: "+subscriber+" "+listOwner+" "+list);
+		logEvent("UserListUnsubscription",map(map(map("subscriber",subscriber),"listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListSubscription(User subscriber, User listOwner,
 			UserList list) {
-		System.out.println("list sub: "+subscriber+" "+listOwner+" "+list);
+		logEvent("UserListSubscription",map(map(map("subscriber",subscriber),"listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListMemberDeletion(User deletedMember, User listOwner,
 			UserList list) {
-		System.out.println("list member delete: "+deletedMember+" "+listOwner+" "+list);
+		logEvent("UserListMemberDeletion",map(map(map("deletedMember",deletedMember),"listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListMemberAddition(User addedMember, User listOwner,
 			UserList list) {
-		System.out.println("list member add: "+addedMember+" "+listOwner+" "+list);
+		logEvent("UserListMemberAddition",map(map(map("addedMember",addedMember),"listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListDeletion(User listOwner, UserList list) {
-		System.out.println("list delete: "+listOwner+" "+list);
+		logEvent("UserListDeletion",map(map("listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUserListCreation(User listOwner, UserList list) {
-		System.out.println("list create: "+listOwner+" "+list);
+		logEvent("UserListCreation",map(map("listOwner",listOwner),"list",list));
 	}
 	
 	@Override
 	public void onUnfavorite(User source, User target, Status unfavoritedStatus) {
-		System.out.println("unfav: "+source+" "+target+" "+unfavoritedStatus);
+		logEvent("Unfavorite",map(map(map("source",source),"target",target),"unfavoritedStatus",unfavoritedStatus));
 	}
 	
 	@Override
 	public void onUnblock(User source, User unblockedUser) {
-		System.out.println("unblock: "+source+" "+unblockedUser);
+		logEvent("Unblock",map(map("source",source),"unblockedUser",unblockedUser));
 	}
 	
 	@Override
-	public void onFriendList(long[] friendIds) {
-		System.out.println("friends: "+Arrays.toString(friendIds));
+	public void onFriendList(final long[] friendIds) {
+		logEvent("FriendList",map("friendIds",PrimitiveList.asList(friendIds)));
 		for(long id: friendIds){
 			bot.createPlayer(id, PlayerType.PLAYER);
 		}
@@ -187,56 +200,56 @@ public class Configurator implements UserstreamHandler{
 	
 	@Override
 	public void onFollow(User source, User followedUser) {
-		System.out.println("follow: "+source+" "+followedUser);
+		logEvent("Follow",map(map("source",source),"followedUser",followedUser));
 	}
 	
 	@Override
 	public void onFavorite(User source, User target, Status favoritedStatus) {
-		System.out.println("fav: "+source+" "+target+" "+favoritedStatus);
+		logEvent("Favorite",map(map(map("source",source),"target",target),"favoritedStatus",favoritedStatus));
 	}
 	
 	@Override
 	public void onDirectMessage(DirectMessage directMessage) {
-		System.out.println("dm: "+directMessage);
+		logEvent("DirectMessage",map("directMessage",directMessage));
 	}
 	
 	@Override
 	public void onDeletionNotice(long directMessageId, long userId) {
-		System.out.println("del: "+directMessageId+" "+userId);
+		logEvent("DeletionNotice",map(map("directMessageId",directMessageId),"userId",userId));
 	}
 	
 	@Override
 	public void onBlock(User source, User blockedUser) {
-		System.out.println("follow: "+source+" "+blockedUser);
+		logEvent("Block",map(map("source",source),"blockedUser",blockedUser));
 	}
 	
 	@Override
 	public void onUnknownMessageType(String msg) {
-		System.out.println("err: "+msg);
+		logEvent("UnknownMessageType",map("msg",msg));
 	}
 	
 	@Override
 	public void onUnfollow(User source, User target) {
-		System.out.println("unfollow: "+source+" "+target);
+		logEvent("Unfollow",map(map("source",source),"target",target));
 	}
 	
 	@Override
 	public void onStallWarningMessage(StallWarningMessage warning) {
-		System.out.println("stall: "+warning);
+		logEvent("StallWarningMessage",map("warning",warning));
 	}
 	
 	@Override
 	public void onRetweet(User source, User target, Status retweetedStatus) {
-		System.out.println("retweet: "+source+" "+target+" "+retweetedStatus);
+		logEvent("Retweet",map(map(map("source",source),"target",target),"favoritedStatus",retweetedStatus));
 	}
 	
 	@Override
 	public void onDisconnectMessage(DisconnectMessage disconnectMessage) {
-		System.out.println("disconnect: "+disconnectMessage);
+		logEvent("DisconnectMessage",map("disconnectMessage",disconnectMessage));
 	}
 
 	public static void main(String[] args) throws IllegalStateException, TwitterException {
-		Configurator config = new Configurator();
+		BotMain config = new BotMain();
 		config.start();
 		config.close();
 	}

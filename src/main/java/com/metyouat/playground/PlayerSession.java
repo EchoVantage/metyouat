@@ -12,9 +12,10 @@ import com.metyouat.playground.Session.BaseSession;
 
 public class PlayerSession extends BaseSession{
 	public static final BaseGame GAME = new BaseGame(){
-		public BaseSession newSession(Player player) {
+		@Override
+      public BaseSession newSession(Player player) {
 			return new PlayerSession().withGame(GAME);
-		};
+		}
 	};
 	
 	private List<Status> statuses = new ArrayList<>();

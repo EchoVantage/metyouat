@@ -20,9 +20,9 @@ public class TweetProfilePic {
 	public static void main(String[] args) throws TwitterException, IOException {
 		String user = "mikedeck";
 
-		Twitter twitter = new Configurator().getTwitter();
+		Twitter twitter = new BotMain().getTwitter();
 
-		String imgUrlString = twitter.showUser(user).getProfileImageURL();
+		String imgUrlString = twitter.showUser(user).getOriginalProfileImageURL();
 		Matcher m = IMAGE_URL_PATTERN.matcher(imgUrlString);
 		if(!m.matches()) {
 			throw new RuntimeException("The URL did not match the expected pattern");

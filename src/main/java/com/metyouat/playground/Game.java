@@ -1,8 +1,5 @@
 package com.metyouat.playground;
 
-import twitter4j.Status;
-import twitter4j.TwitterException;
-
 import com.metyouat.playground.Session.BaseSession;
 
 public interface Game {
@@ -28,17 +25,17 @@ public interface Game {
 			withBot(bot).withSession(session);
 		}
 		
-		BaseGame withBot(Bot bot){
-			assert this.bot == null || this.bot == bot: "Cannot change bot on game";
-			assert bot != null : "Missing bot";
-			this.bot = bot;
+		BaseGame withBot(Bot newBot){
+			assert this.bot == null || this.bot == newBot: "Cannot change bot on game";
+			assert newBot != null : "Missing bot";
+			this.bot = newBot;
 			return this;
 		}
 		
-		BaseGame withSession(BaseSession session){
-			assert this.session == null || session == this.session : "Cannot change default session on game";
-			assert session != null : "Missing default session";
-			this.session = session.withGame(this);
+		BaseGame withSession(BaseSession newSession){
+			assert this.session == null || newSession == this.session : "Cannot change default session on game";
+			assert newSession != null : "Missing default session";
+			this.session = newSession.withGame(this);
 			return this;
 		}
 		

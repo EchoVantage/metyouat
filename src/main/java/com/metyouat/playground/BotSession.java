@@ -2,11 +2,18 @@ package com.metyouat.playground;
 
 import twitter4j.Status;
 
+import com.metyouat.playground.Bot.PlayerType;
 import com.metyouat.playground.Game.BaseGame;
 import com.metyouat.playground.Session.BaseSession;
 
 public class BotSession extends BaseSession {
 	public static final BaseGame GAME = new BaseGame(new BotSession()){
+		@Override
+      BaseGame withBot(Bot bot) {
+			bot.createPlayer(bot.getId(), PlayerType.BOT);
+			return this;
+		}
+		
 		@Override
 		public BaseSession newSession(Player player) {
 			assert player.getId() == bot().getId() : "Only the bot can have a bot session";

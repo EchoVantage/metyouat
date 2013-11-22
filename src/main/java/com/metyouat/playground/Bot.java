@@ -15,16 +15,7 @@ import com.metyouat.playground.Game.BaseGame;
 
 public class Bot {
 	public enum PlayerType{
-		BOT{
-			@Override
-			void init(Bot bot) {
-				bot.createPlayer(bot.getId(), BOT);
-			}
-		}, PLAYER, BYSTANDER;
-		
-		void init(Bot bot){
-			// do nothing
-		}
+		BOT, PLAYER, BYSTANDER;
 	}
 	
 	private Twitter twitter;
@@ -52,8 +43,8 @@ public class Bot {
 		assert type != null : "Missing type";
 		assert game != null : "Missing default game";
 		assert this.games.get(type) == null : "Cannot change default game for "+type+" on bot";
-		this.games.put(type, game.withBot(this));
-		type.init(this);
+		this.games.put(type, game);
+		game.withBot(this);
 		return this;
 	}
 	
@@ -65,9 +56,9 @@ public class Bot {
 		twitter.sendDirectMessage(player.getId(), message);
 	}
 
-	public Player createPlayer(long id, PlayerType type) {
-		Player player = new Player(id);
-		Player old = players.putIfAbsent(player.getId(), player);
+	public Player createPlayer(long userId, PlayerType type) {
+		Player player = new Player(userId);
+		Player old = players.putIfAbsent(userId, player);
 		return old == null ? player.withSession(gameFor(type).newSession(player)) : old;
 	}
 
@@ -81,9 +72,9 @@ public class Bot {
 		return getPlayer(user.getId(), type).withUser(user);
 	}
 
-	public Player getPlayer(long id, PlayerType type) {
-		Player player = players.get(id);
-		return player == null ? createPlayer(id, type) : player;
+	public Player getPlayer(long userId, PlayerType type) {
+		Player player = players.get(userId);
+		return player == null ? createPlayer(userId, type) : player;
 	}
 
 	public void follow(Player player) throws TwitterException {

@@ -68,10 +68,10 @@ public interface Session {
 			bot().replyTo(status, message);
 		}
 		
-		BaseSession withGame(BaseGame game) {
-			assert this.game == null || this.game == game : "Cannot change game on session";
-			assert game != null : "Missing game";
-			this.game = game;
+		BaseSession withGame(BaseGame newGame) {
+			assert this.game == null || this.game == newGame : "Cannot change game on session";
+			assert newGame != null : "Missing game";
+			this.game = newGame;
 			return this;
 		}
 	}
