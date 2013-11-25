@@ -1,10 +1,15 @@
 package com.metyouat.playground;
 
-import static com.metyouat.playground.Bot.PlayerType.BYSTANDER;
 import static com.twitter.hbc.core.HttpHosts.USERSTREAM_HOST;
 import static java.util.Collections.singletonList;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -12,19 +17,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import twitter4j.DirectMessage;
+import twitter4j.HashtagEntity;
 import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.User;
 import twitter4j.UserList;
+import twitter4j.UserMentionEntity;
 import twitter4j.UserStreamListener;
 import twitter4j.conf.ConfigurationBuilder;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.metyouat.playground.Bot.PlayerType;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.endpoint.UserstreamEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
@@ -43,9 +50,10 @@ public class BotMain implements UserstreamHandler{
 	private final Twitter twitter;
 	private final Twitter4jUserstreamClient client;
 	private ExecutorService executorService;
-	private Bot bot;
+	private Map<Long,Player> players = new HashMap<>();
+	private Database db;
 	
-	public BotMain() throws IllegalStateException, TwitterException {
+	public BotMain() {
 		ConfigurationBuilder configBuilder = new ConfigurationBuilder()
 	      .setDebugEnabled(true)
 	      .setOAuthConsumerKey(consumerKey)
@@ -53,10 +61,6 @@ public class BotMain implements UserstreamHandler{
 	      .setOAuthAccessToken(accessToken)
 	      .setOAuthAccessTokenSecret(accessTokenSecret);
 		twitter = new TwitterFactory(configBuilder.build()).getInstance();
-		bot = new Bot(twitter);
-		bot.withGame(PlayerType.BOT, BotSession.GAME);
-		bot.withGame(PlayerType.BYSTANDER, FriendSession.GAME);
-		bot.withGame(PlayerType.PLAYER, PlayerSession.GAME);
 
 		final BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>(100000);
 
@@ -110,10 +114,96 @@ public class BotMain implements UserstreamHandler{
 	public void onStatus(Status status) {
 		logEvent("Status",map("status",status));
 		try {
-			bot.getPlayer(status.getUser(), BYSTANDER).onStatus(status);
-		} catch (IllegalStateException | TwitterException e) {
+			User user = status.getUser();
+			if(!user.isFollowRequestSent()){
+				user = twitter.createFriendship(user.getId());
+			}
+			db.saveUser(user);
+			Player player = getPlayer(user.getId());
+			player.setUser(user);
+			List<String> tags = tags(status);
+			if(findTag(status, "imet") != null){
+				tags.addAll(player.getTags());
+				db.saveStatus(status, tags);
+				for(UserMentionEntity mention: status.getUserMentionEntities()){
+					db.saveMention(status, mention, tags);
+				}
+				UserMentionEntity mention = player.getTargetId() == null ? null : findMention(status, player.getTargetId());
+				if(mention != null){
+				   player.setTargetId(newTarget(status, "You found "+mention.getName()+"!"));
+				}
+			}else if(findMention(status, twitter.getId()) != null){
+				String game = db.setGame(status);
+				db.saveStatus(status, tags);
+				player.setTags(tags);
+				player.setGame(game);
+				if(game == null){
+					replyTo(status, "Thanks for playing. You won't get targets or be targeted, but I'll still watch for #IMet tweets.");
+				}else{
+				   player.setTargetId(newTarget(status, "You're playing #"+game+"!"));
+				}
+			}
+		} catch (IllegalStateException | TwitterException | IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private Long newTarget(Status status, String prefix) throws TwitterException, IOException, MalformedURLException {
+	   Long targetId = db.newTarget(status.getUser());
+	   if(targetId == null){
+	   	replyTo(status, prefix+" There aren't any available targets; I'll watch your feed for tweets tagged with #IMet.");
+	   }else{
+	   	Player target = getPlayer(targetId);
+	   	replyTo(status, prefix+" I'll watch your feed for tweets tagged with #IMet.", new URL(target.getOriginalProfileImageURL()));
+	   }
+	   return targetId;
+   }
+
+	private Player getPlayer(long id) {
+	   Player player = players.get(id);
+		if(player == null){
+			player = db.getPlayer(id);
+			players.put(id, player);
+		}
+	   return player;
+   }
+
+	public void replyTo(Status status, String message)
+			throws TwitterException {
+		twitter.updateStatus(new StatusUpdate("@"+status.getUser().getScreenName()+" "+message).inReplyToStatusId(status.getId()));
+	}
+
+	public void replyTo(Status status, String message, URL media)
+			throws TwitterException, IOException {
+		try(InputStream stream = media.openStream()){
+			twitter.updateStatus(new StatusUpdate("@"+status.getUser().getScreenName()+" "+message).media("Your next target", stream).inReplyToStatusId(status.getId()));
+		}
+	}
+
+	public static UserMentionEntity findMention(Status status, long id) {
+		for (UserMentionEntity user : status.getUserMentionEntities()) {
+			if (user.getId() == id) {
+				return user;
+			}
+		}
+		return null;
+	}
+
+	public static HashtagEntity findTag(Status status, String text) {
+		for (HashtagEntity tag : status.getHashtagEntities()) {
+			if (tag.getText().equalsIgnoreCase(text)) {
+				return tag;
+			}
+		}
+		return null;
+	}
+	
+	public static List<String> tags(Status status){
+		List<String> tags = new ArrayList<>();
+		for(HashtagEntity tag: status.getHashtagEntities()){
+			tags.add(tag.getText());
+		}
+		return tags;
 	}
 
 	@Override
@@ -193,9 +283,6 @@ public class BotMain implements UserstreamHandler{
 	@Override
 	public void onFriendList(final long[] friendIds) {
 		logEvent("FriendList",map("friendIds",PrimitiveList.asList(friendIds)));
-		for(long id: friendIds){
-			bot.createPlayer(id, PlayerType.PLAYER);
-		}
 	}
 	
 	@Override
@@ -248,13 +335,9 @@ public class BotMain implements UserstreamHandler{
 		logEvent("DisconnectMessage",map("disconnectMessage",disconnectMessage));
 	}
 
-	public static void main(String[] args) throws IllegalStateException, TwitterException {
+	public static void main(String[] args) {
 		BotMain config = new BotMain();
 		config.start();
 		config.close();
-	}
-
-	public Twitter getTwitter() {
-		return twitter;
 	}
 }
