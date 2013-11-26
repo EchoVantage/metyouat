@@ -105,11 +105,13 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 						db.saveMention(status, mention, tags);
 					}
 				}
-				UserMentionEntity mention = player.getTargetUserId() == null ? null : findMention(status, player.getTargetUserId());
-				if(mention != null) {
-					player.setTargetUserId(newTarget(status, "You found " + mention.getName() + "!"));
+				UserMentionEntity mention = findMention(status, player.getTargetUserId());
+				if(player.getTargetUserId() == null){
+					player.setTargetUserId(newTarget(status, "Your score is "+db.getPoints(user.getId())+"."));
+				}else if(mention != null) {
+					player.setTargetUserId(newTarget(status, "You tagged " + mention.getName() + "!"));
 				} else {
-					bot.replyTo(status, "You have " + db.getPoints(user.getId()) + " points!");
+					bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+".");
 				}
 			} else if(findMention(status, bot.getId()) != null) {
 				db.saveStatus(status, tags);
@@ -117,9 +119,9 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 				player.setTags(tags);
 				player.setGame(game);
 				if(game == null) {
-					bot.replyTo(status, "Thanks for playing. You won't get targets or be targeted, but I'll still watch for #IMet tweets.");
+					bot.replyTo(status, "Thanks for playing MetYouAt. You've opted out of bonus tagging, but you can still score points by tagging people with #IMet.");
 				} else {
-					player.setTargetUserId(newTarget(status, "You're meeting people at #" + game + "!"));
+					player.setTargetUserId(newTarget(status, "Your score is "+db.getPoints(user.getId())+"."));
 				}
 			}
 		} catch(IllegalStateException | TwitterException | IOException | SQLException e) {
@@ -144,10 +146,10 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	private Long newTarget(final Status status, final String prefix) throws TwitterException, IOException, MalformedURLException, SQLException {
 		Long targetUserId = db.newTarget(status.getUser());
 		if(targetUserId == null) {
-			bot.replyTo(status, prefix + " There aren't any available targets; I'll watch your feed for tweets tagged with #IMet.");
+			bot.replyTo(status, prefix + "Your score is "+db.getPoints(status.getUser().getId())+". Tag people with #IMet to score points.");
 		} else {
 			Player target = getPlayer(targetUserId);
-			bot.replyTo(status, prefix + " I'll watch your feed for tweets tagged with #IMet.", new URL(target.getOriginalProfileImageURL()));
+			bot.replyTo(status, prefix + " Tag people with #IMet to score points. Your bonus tag: ", new URL(target.getOriginalProfileImageURL()));
 		}
 		return targetUserId;
 	}

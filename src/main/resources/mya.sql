@@ -1,17 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
 
-DROP TABLE IF EXISTS player, status, statusTag, met, metTag CASCADE;
+--DROP TABLE IF EXISTS player, status, statusTag, met, metTag CASCADE;
 CREATE TABLE IF NOT EXISTS player(id BIGINT PRIMARY KEY, screenName TEXT, name TEXT, originalProfileImageURL TEXT, following BOOLEAN);
 
 CREATE TABLE IF NOT EXISTS status(id BIGINT PRIMARY KEY, playerId BIGINT NOT NULL REFERENCES player, ts BIGINT NOT NULL, message TEXT NOT NULL);
 
-ALTER TABLE player ADD gameStatusId BIGINT REFERENCES status, ADD game CITEXT, ADD targetPlayerId BIGINT;
+--ALTER TABLE player ADD gameStatusId BIGINT REFERENCES status, ADD game CITEXT, ADD targetPlayerId BIGINT;
 
 CREATE TABLE IF NOT EXISTS statusTag(id SERIAL PRIMARY KEY, statusId BIGINT NOT NULL REFERENCES status, tag CITEXT NOT NULL, UNIQUE (statusId, tag));
 
 CREATE TABLE IF NOT EXISTS met(id SERIAL PRIMARY KEY, playerId BIGINT NOT NULL REFERENCES player, targetPlayerId BIGINT NOT NULL REFERENCES player, statusId BIGINT REFERENCES status, targeted BOOLEAN, UNIQUE (playerId, targetPlayerId));
 
 CREATE TABLE IF NOT EXISTS metTag(id SERIAL PRIMARY KEY, metId BIGINT NOT NULL REFERENCES met, tag CITEXT NOT NULL, UNIQUE (metId, tag));
+
+CREATE OR REPLACE VIEW points AS SELECT targeter.playerId as playerId, count(targeter.targeted) as finds, count(target.targeted) as founds, count(target.playerId) as connections FROM met AS targeter JOIN met as target ON targeter.playerId=target.targetPlayerId AND targeter.targetPlayerId=target.playerId WHERE targeter.statusId IS NOT NULL AND target.statusId IS NOT NULL GROUP BY targeter.playerId;
+
+CREATE OR REPLACE VIEW leaderboard AS SELECT player.id as playerId, screenName, name, originalProfileImageURL, game, finds, founds, connections FROM player LEFT JOIN points ON player.id=points.playerId;
 
 CREATE OR REPLACE FUNCTION savePlayer(id BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT) RETURNS VOID AS
 $$
@@ -132,7 +136,7 @@ DECLARE
 	targetId BIGINT;
 BEGIN
 	UPDATE met SET targeted=FALSE FROM player WHERE player.id=$1 AND met.playerId=$1 AND met.targetPlayerId=player.targetPlayerId;
-	SELECT player.id INTO targetId FROM player LEFT JOIN status ON gameStatusId=status.id WHERE game=(SELECT game FROM player where id=$1) AND player.id NOT IN (SELECT targetPlayerId FROM met WHERE met.playerId=$1) AND player.id != $1 ORDER BY status.ts DESC LIMIT 1;
+	SELECT player.id INTO targetId FROM player LEFT JOIN status ON gameStatusId=status.id WHERE game=(SELECT game FROM player where id=$1) AND player.id NOT IN (SELECT targetPlayerId FROM met WHERE met.playerId=$1) AND $1 NOT IN (SELECT targetPlayerId FROM met WHERE met.playerId=player.id) AND player.id != $1 ORDER BY status.ts DESC LIMIT 1;
 	UPDATE player SET targetPlayerId=targetId WHERE id=$1;
 	IF targetId IS NOT NULL THEN
 		INSERT INTO met (playerId, targetPlayerId, targeted) VALUES ($1, targetId, TRUE);
@@ -162,10 +166,14 @@ END
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE VIEW points AS SELECT targeter.playerId as playerId, count(targeter.targeted) as finds, count(target.targeted) as founds, count(target.playerId) as connections FROM met AS targeter JOIN met as target ON targeter.playerId=target.targetPlayerId AND targeter.targetPlayerId=target.playerId WHERE targeter.statusId IS NOT NULL AND target.statusId IS NOT NULL GROUP BY targeter.playerId;
-
-CREATE OR REPLACE FUNCTION getPoints(playerId BIGINT) RETURNS BIGINT AS
+CREATE OR REPLACE FUNCTION getPoints(playerId BIGINT) RETURNS TABLE(finds BIGINT, founds BIGINT, connections BIGINT) AS
 $$
-SELECT finds*10+founds*5+connections FROM points WHERE points.playerId=$1;
+SELECT finds, founds, connections FROM points WHERE points.playerId=$1;
+$$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION getLeaderboard(game TEXT) RETURNS TABLE(playerId BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT, finds BIGINT, founds BIGINT, connections BIGINT) AS
+$$
+SELECT playerId, screenName, name, originalProfileImageURL, finds, founds, connections FROM leaderboard WHERE leaderboard.game=$1;
 $$
 LANGUAGE sql;

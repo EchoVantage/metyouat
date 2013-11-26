@@ -77,7 +77,7 @@ public class Database implements AutoCloseable {
 		}
 
 		savePlayer = c.prepareStatement("SELECT savePlayer(?, ?, ?, ?)");
-		saveMention = c.prepareStatement("SELECT saveMention(?, ?, ?, ?)");
+		saveMention = c.prepareStatement("SELECT saveMention(?, ?, ?)");
 		saveStatus = c.prepareStatement("SELECT saveStatus(?, ?, ?, ?)");
 		tagStatus = c.prepareStatement("SELECT tagStatus(?, ?)");
 		saveMet = c.prepareStatement("SELECT * FROM saveMet(?, ?, ?)");
@@ -109,7 +109,7 @@ public class Database implements AutoCloseable {
 		getPoints.setLong(1, playerId);
 		try(ResultSet r = getPoints.executeQuery()) {
 			r.next();
-			return r.getLong(1);
+			return r.getLong("finds")*9+r.getLong("founds")*4+r.getLong("connections");
 		}
 	}
 
@@ -175,7 +175,7 @@ public class Database implements AutoCloseable {
 		saveMention.setLong(1, playerId);
 		saveMention.setString(2, screenName);
 		saveMention.setString(3, name);
-		savePlayer.execute();
+		saveMention.execute();
 	}
 
 	private long saveMet(final long playerId, final long targetPlayerId, final long statusId) throws SQLException {
