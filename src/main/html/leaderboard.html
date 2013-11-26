@@ -21,23 +21,23 @@
   <body>
   
   	<div id="wrap" class="container">
-  		<div class="page-header">
-  			<h1>Play the Met You At Game w/ Common Desk!</h1>
-  		</div>
   		<div class="row">
   			<div id="instructions" class="col-lg-4">
   				<div class="panel panel-primary">
   				<div class="panel-heading">
-  					<h2 class="panel-title">How To Play</h3>
+  					<h2 class="panel-title">Play @MetYouAt</h3>
   				</div>
   				<div class="panel-body">
-  					<ol>
-  						<li>Mention @MetYouAt in a tweet to join the game</li>
-  						<li>Receive a picture of your first target</li>
-  						<li>Once you find your target, send a tweet with their handle and the #IMet hashtag</li>
-  						<li>Have them do the same and you'll each earn points</li>
-  						<li>We'll keep sending you targets and you keep earning points!</li>
-  					</ol>
+  					<dl>
+  						<dt>Join</dt>
+  						<dd>Mention @MetYouAt in a tweet to join the game.</dd>
+  						<dt>Meet</dt>
+  						<dd>Use the #IMet hashtag with other players' handles to connect in the game</dd>
+  						<dt>Score</dt>
+  						<dd>Get points when both you and another player #IMet each other. You can get bonus points for meeting the target @MetYouAt sends to you (check your mentions for a picture of your target.)</dd>
+  						<dt>Win</dt>
+  						<dd>The more people you meet the more points you score. Check this board for the current leaders.</dd>
+  					</dl>
   				</div>
   				</div>
   			</div>
@@ -55,7 +55,7 @@
   							</a>
   							<div class="media-body">
   								<h4 class="media-heading">{{player.name}}</h4>
-  								<p>{{player.points}} points / {{player.connections}} connections</p>
+  								<p class="point-detail">{{player.points}} points / {{player.connections}} connections</p>
   							</div>
   							</div>
   						</li>
@@ -75,7 +75,7 @@
   								<img class="media-object" src="{{status.avatar}}">
   							</a>
   							<p class="media-body">
-  								{{status.sender}}: {{status.content}}
+  								<b>{{status.sender}}:</b> {{status.content}}
   							</p>
   						</li>
   					</ul>

@@ -1,16 +1,47 @@
 #wrap {
-	padding: 0 15px;
+	padding: 15px 15px 0;
 	width: 100%;
 }
 
 #instructions {
+	font-size: 1.5em;
+}
+
+#instructions dl {
+	margin: 0;
+}
+
+#instructions dd {
+	color: #666;
+	margin-bottom: 15px;
+}
+
+#instructions dt {
 	font-size: 2em;
 }
 
 #leaderboard ol > li {
 	font-size: 1.5em;
+	margin-top: 25px;
+}
+
+#leaderboard ol > li:first-child {
+	font-size: 1.5em;
+	margin-top: 0;
 }
 
 #leaderboard ol > li > * {
 	font-size: 0.5em;
+}
+
+#leaderboard .point-detail {
+	color: #999;
+}
+
+#feed {
+	
+}
+
+.panel {
+	height: 1045px;
 }
