@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,9 +52,10 @@ public class BotMain implements UserstreamHandler{
 	private final Twitter4jUserstreamClient client;
 	private ExecutorService executorService;
 	private Map<Long,Player> players = new HashMap<>();
-	private Database db;
+	private Database db = new Database();
 	
 	public BotMain() {
+		db = new Database();
 		ConfigurationBuilder configBuilder = new ConfigurationBuilder()
 	      .setDebugEnabled(true)
 	      .setOAuthConsumerKey(consumerKey)
@@ -79,17 +81,19 @@ public class BotMain implements UserstreamHandler{
 		client = new Twitter4jUserstreamClient(builder.build(), msgQueue, singletonList((UserStreamListener)this), executorService);
 	}
 	
-	public void start(){
+	public void start() throws SQLException{
+		db.connect("localhost","fuwjax","","test","mya");
 		client.connect();
 		client.process();
 		client.process();
 		client.process();
 	}
 	
-	public void close(){
+	public void close() throws Exception{
 		client.stop();
 		executorService.shutdown();
 		twitter.shutdown();
+		db.close();
 	}
 
 	@Override
@@ -115,51 +119,58 @@ public class BotMain implements UserstreamHandler{
 		logEvent("Status",map("status",status));
 		try {
 			User user = status.getUser();
-			if(!user.isFollowRequestSent()){
-				user = twitter.createFriendship(user.getId());
+			if(user.getId() == twitter.getId()){
+				return;
 			}
-			db.saveUser(user);
+			db.savePlayer(user);
 			Player player = getPlayer(user.getId());
-			player.setUser(user);
+			if(!player.isFollowing()){
+				user = twitter.createFriendship(user.getId());
+				db.followingPlayer(user.getId());
+				player.setFollowing(true);
+				player.setUser(user);
+			}
 			List<String> tags = tags(status);
 			if(findTag(status, "imet") != null){
 				tags.addAll(player.getTags());
 				db.saveStatus(status, tags);
 				for(UserMentionEntity mention: status.getUserMentionEntities()){
-					db.saveMention(status, mention, tags);
+					if(mention.getId() != twitter.getId()){
+						db.saveMention(status, mention, tags);
+					}
 				}
-				UserMentionEntity mention = player.getTargetId() == null ? null : findMention(status, player.getTargetId());
+				UserMentionEntity mention = player.getTargetUserId() == null ? null : findMention(status, player.getTargetUserId());
 				if(mention != null){
-				   player.setTargetId(newTarget(status, "You found "+mention.getName()+"!"));
+				   player.setTargetUserId(newTarget(status, "You found "+mention.getName()+"!"));
 				}
 			}else if(findMention(status, twitter.getId()) != null){
-				String game = db.setGame(status);
 				db.saveStatus(status, tags);
+				String game = db.setGame(status);
 				player.setTags(tags);
 				player.setGame(game);
 				if(game == null){
 					replyTo(status, "Thanks for playing. You won't get targets or be targeted, but I'll still watch for #IMet tweets.");
 				}else{
-				   player.setTargetId(newTarget(status, "You're playing #"+game+"!"));
+				   player.setTargetUserId(newTarget(status, "You're meeting people at #"+game+"!"));
 				}
 			}
-		} catch (IllegalStateException | TwitterException | IOException e) {
+		} catch (IllegalStateException | TwitterException | IOException | SQLException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private Long newTarget(Status status, String prefix) throws TwitterException, IOException, MalformedURLException {
-	   Long targetId = db.newTarget(status.getUser());
-	   if(targetId == null){
+	private Long newTarget(Status status, String prefix) throws TwitterException, IOException, MalformedURLException, SQLException {
+	   Long targetUserId = db.newTarget(status.getUser());
+	   if(targetUserId == null){
 	   	replyTo(status, prefix+" There aren't any available targets; I'll watch your feed for tweets tagged with #IMet.");
 	   }else{
-	   	Player target = getPlayer(targetId);
+	   	Player target = getPlayer(targetUserId);
 	   	replyTo(status, prefix+" I'll watch your feed for tweets tagged with #IMet.", new URL(target.getOriginalProfileImageURL()));
 	   }
-	   return targetId;
+	   return targetUserId;
    }
 
-	private Player getPlayer(long id) {
+	private Player getPlayer(long id) throws SQLException {
 	   Player player = players.get(id);
 		if(player == null){
 			player = db.getPlayer(id);
@@ -181,7 +192,7 @@ public class BotMain implements UserstreamHandler{
 	}
 
 	public static UserMentionEntity findMention(Status status, long id) {
-		for (UserMentionEntity user : status.getUserMentionEntities()) {
+		for (UserMentionEntity user: status.getUserMentionEntities()) {
 			if (user.getId() == id) {
 				return user;
 			}
@@ -201,7 +212,9 @@ public class BotMain implements UserstreamHandler{
 	public static List<String> tags(Status status){
 		List<String> tags = new ArrayList<>();
 		for(HashtagEntity tag: status.getHashtagEntities()){
-			tags.add(tag.getText());
+			if(!"imet".equalsIgnoreCase(tag.getText())){
+				tags.add(tag.getText());
+			}
 		}
 		return tags;
 	}
@@ -283,6 +296,13 @@ public class BotMain implements UserstreamHandler{
 	@Override
 	public void onFriendList(final long[] friendIds) {
 		logEvent("FriendList",map("friendIds",PrimitiveList.asList(friendIds)));
+		for(long friendId: friendIds){
+			try {
+	         db.followingPlayer(friendId);
+         } catch(SQLException e) {
+         	e.printStackTrace();
+         }
+		}
 	}
 	
 	@Override
@@ -335,7 +355,7 @@ public class BotMain implements UserstreamHandler{
 		logEvent("DisconnectMessage",map("disconnectMessage",disconnectMessage));
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		BotMain config = new BotMain();
 		config.start();
 		config.close();

@@ -5,45 +5,57 @@ import java.util.List;
 import twitter4j.User;
 
 public class Player {
+	private List<String> tags;
+	private String game;
+	private String originalProfileImageURL;
+	private Long targetUserId;
+	private boolean following;
+
+	public Player(long id, String screenName, String name, String originalProfileImageURL, boolean following, String game, Long targetUserId){
+		this.originalProfileImageURL = originalProfileImageURL;
+		this.following = following;
+		this.game = game;
+		this.targetUserId = targetUserId;
+	}
 
 	public List<String> getTags() {
-	   // TODO Auto-generated method stub
-	   return null;
+	   return tags;
+   }
+	
+	public boolean isFollowing() {
+	   return following;
+   }
+	
+	public void setFollowing(boolean following) {
+	   this.following = following;
    }
 
-	public Long getTargetId() {
-	   // TODO Auto-generated method stub
-	   return null;
+	public Long getTargetUserId() {
+	   return targetUserId;
    }
 
 	public String getOriginalProfileImageURL() {
-	   // TODO Auto-generated method stub
-	   return null;
+	   return originalProfileImageURL;
    }
 
 	public String getGame() {
-	   // TODO Auto-generated method stub
-	   return null;
+	   return game;
    }
 
-	public void setTargetId(Long targetId) {
-	   // TODO Auto-generated method stub
-	   
+	public void setTargetUserId(Long targetUserId) {
+		this.targetUserId = targetUserId;
    }
 
 	public void setTags(List<String> tags) {
-	   // TODO Auto-generated method stub
-	   
+		this.tags = tags;
    }
 
 	public void setGame(String game) {
-	   // TODO Auto-generated method stub
-	   
+		this.game = game;
    }
 
 	public void setUser(User user) {
-	   // TODO Auto-generated method stub
-	   
+		this.originalProfileImageURL = user.getOriginalProfileImageURL();
    }
 
 }
