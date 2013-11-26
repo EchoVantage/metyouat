@@ -41,54 +41,21 @@
   				</div>
   				</div>
   			</div>
-  			<div id="leaderboard" class="col-lg-4">
+  			<div id="leaderboard" class="col-lg-4" ng-controller="MyaLeaderboard">
   				<div class="panel panel-primary">
   				<div class="panel-heading">
   					<h3 class="panel-title">Leaderboard</h3>
   				</div>
   				<div class="panel-body">
   					<ol>
-  						<li>
+  						<li ng-repeat="player in leaders">
   							<div class="media">
   							<a class="pull-left">
-								<img class="media-object" style="width: 73px; height: 73px;" src="https://pbs.twimg.com/profile_images/378800000543791541/3ffcc8261669352c5e5992945c8d6014_bigger.jpeg">
+								<img class="media-object" src="{{player.avatar}}">
   							</a>
   							<div class="media-body">
-  								<h4 class="media-heading">Mike Deck</h4>
-  								<p>57 points / 5 targets met</p>
-  							</div>
-  							</div>
-  						</li>
-  						<li>
-  							<div class="media">
-  							<a class="pull-left">
-								<img class="media-object" src="https://pbs.twimg.com/profile_images/378800000735535433/13f2f2651c5ce46090dcc7836e75362d_bigger.jpeg">
-  							</a>
-  							<div class="media-body">
-  								<h4 class="media-heading">Mike Doberenz</h4>
-  								<p>52 points / 5 targets met</p>
-  							</div>
-  							</div>
-  						</li>
-  						<li>
-  							<div class="media">
-  							<a class="pull-left">
-								<img class="media-object" style="width: 73px; height: 73px;" src="https://pbs.twimg.com/profile_images/378800000506746994/dcef7ed5fbe93860c74b892311f74aa4_bigger.jpeg">
-  							</a>
-  							<div class="media-body">
-  								<h4 class="media-heading">Sarah Kayfus</h4>
-  								<p>46 points / 4 targets met</p>
-  							</div>
-  							</div>
-  						</li>
-  						<li>
-  							<div class="media">
-  							<a class="pull-left">
-								<img class="media-object" src="https://pbs.twimg.com/profile_images/378800000241505326/984d58129e98651947cca7ce38bc409b_bigger.jpeg">
-  							</a>
-  							<div class="media-body">
-  								<h4 class="media-heading">Dennis Smolek</h4>
-  								<p>41 points / 3 targets met</p>
+  								<h4 class="media-heading">{{player.name}}</h4>
+  								<p>{{player.points}} points / {{player.connections}} connections</p>
   							</div>
   							</div>
   						</li>
