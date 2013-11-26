@@ -8,7 +8,6 @@
 	<link rel="stylesheet" href="css/leaderboard.css">
 	
 	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.2/angular.min.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.2/angular-resource.min.js"></script>
 	<script src="js/leaderboard.js"></script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -48,10 +47,10 @@
   				</div>
   				<div class="panel-body">
   					<ol>
-  						<li ng-repeat="player in leaders">
+  						<li ng-repeat="player in leaderboard">
   							<div class="media">
   							<a class="pull-left">
-								<img class="media-object" src="{{player.avatar}}">
+								<img class="media-object" ng-src="{{player.originalprofileimageurl}}">
   							</a>
   							<div class="media-body">
   								<h4 class="media-heading">{{player.name}}</h4>
@@ -70,12 +69,12 @@
   				</div>
   				<div class="panel-body">
   					<ul class="media-list">
-  						<li class="media" ng-repeat="status in statuses">
+  						<li class="media" ng-repeat="status in feed">
   							<a class="pull-left">
-  								<img class="media-object" src="{{status.avatar}}">
+  								<img class="media-object" ng-src="{{status.originalprofileimageurl}}">
   							</a>
   							<p class="media-body">
-  								<b>{{status.sender}}:</b> {{status.content}}
+  								<b>{{status.name}}:</b> {{status.message}}
   							</p>
   						</li>
   					</ul>

@@ -1,5 +1,6 @@
-angular.module('MetYouAt', ['ngResource']);
+angular.module('MetYouAt', []);
 
+/*
 function MyaStream($scope) {
 	$scope.statuses = [
 			{avatar: 'https://pbs.twimg.com/profile_images/378800000723461847/0b527619cc7ed2c0fc74524cc5771b53_normal.jpeg',
@@ -113,4 +114,22 @@ function MyaLeaderboard($scope) {
 			connections: 1
 		}
 	];
+}
+
+*/
+	
+function MyaStream($scope, $timeout, $http) {
+	$timeout(function(){
+		$http.get('/api/feed/CommonDesk').success(function(data){
+			$scope.feed = data;
+		});
+	}, 1000);
+}
+
+function MyaLeaderboard($scope, $timeout, $http) {
+	$timeout(function(){
+		$http.get('/api/leaderboard/CommonDesk').success(function(data){
+			$scope.leaderboard = data;
+		});
+	}, 1000);
 }

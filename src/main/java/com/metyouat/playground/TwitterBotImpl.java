@@ -38,7 +38,7 @@ import com.twitter.hbc.twitter4j.v3.message.StallWarningMessage;
 
 public class TwitterBotImpl implements TwitterBot, UserstreamHandler, AutoCloseable {
 	private static void logEvent(final String type, final Map<String, Object> map) {
-		System.out.println(type + ": " + map);
+		System.out.println(System.currentTimeMillis()+" "+type + ": " + map);
 	}
 
 	private static Map<String, Object> map(final Map<String, Object> map, final String key, final Object value) {

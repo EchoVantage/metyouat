@@ -3,6 +3,7 @@ package com.metyouat.playground;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import twitter4j.User;
 import twitter4j.UserMentionEntity;
 
 public class BotMain implements TwitterBot.Callback, AutoCloseable {
+	private static final int port = 8080;
 	private static final String accessTokenSecret = "RtoK8BBVgLvFjXYtsGD27WRgfahQ5y6GIbPc0e0yj8WsV";
 	private static final String accessToken = "2197032072-Rbo2CNr61TAivXz0TNaJeTUlFJFGVld6D1QeFVm";
 	private static final String consumerSecret = "5P7ALzTr0MdrvhqCN815rdD31OSnrxDDhZeltrd7Duo";
@@ -25,6 +27,7 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	private static final String password = "";
 	private static final String schema = "common";
 	private static final String database = "mya";
+	private static final String root = "src/main/html";
 	
 
 	public static UserMentionEntity findMention(final Status status, final long id) {
@@ -47,7 +50,7 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 
 	public static void main(final String[] args) throws Exception {
 		BotMain config = new BotMain();
-		config.start();
+		config.connect();
 		config.close();
 	}
 
@@ -65,9 +68,12 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 
 	private final Map<Long, Player> players = new HashMap<>();
 
-	private Database db = new Database();
+	private final Database db = new Database();
+	
+	private final Dashboard dashboard = new Dashboard();
 
 	public void close() throws Exception {
+		dashboard.close();
 		bot.close();
 		db.close();
 	}
@@ -129,9 +135,10 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 		}
 	}
 
-	public void start() throws SQLException {
+	public void connect() throws Exception {
 		db.connect(host, user, password, schema, database);
 		bot.connect(consumerKey, consumerSecret, accessToken, accessTokenSecret);
+		dashboard.connect(port, Paths.get(root), db);
 	}
 
 	private Player getPlayer(final long id) throws SQLException {
