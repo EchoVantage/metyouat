@@ -50,7 +50,7 @@
   						<li ng-repeat="player in leaderboard">
   							<div class="media">
   							<a class="pull-left">
-								<img class="media-object" ng-src="{{player.originalprofileimageurl}}">
+								<img class="media-object" ng-src="{{player.originalprofileimageurl|fileSuffix:'bigger'}}">
   							</a>
   							<div class="media-body">
   								<h4 class="media-heading">{{player.name}}</h4>
@@ -71,7 +71,7 @@
   					<ul class="media-list">
   						<li class="media" ng-repeat="status in feed">
   							<a class="pull-left">
-  								<img class="media-object" ng-src="{{status.originalprofileimageurl}}">
+  								<img class="media-object" ng-src="{{status.originalprofileimageurl|fileSuffix:'normal'}}">
   							</a>
   							<p class="media-body">
   								<b>{{status.name}}:</b> {{status.message}}

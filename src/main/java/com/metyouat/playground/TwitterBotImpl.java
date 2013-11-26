@@ -140,6 +140,7 @@ public class TwitterBotImpl implements TwitterBot, UserstreamHandler, AutoClosea
 	@Override
 	public void onException(final Exception ex) {
 		logEvent("Exception", map("ex", ex));
+		ex.printStackTrace();
 	}
 
 	@Override

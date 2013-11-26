@@ -1,7 +1,6 @@
 package com.metyouat.playground;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -23,14 +22,13 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	private static final String consumerSecret = "5P7ALzTr0MdrvhqCN815rdD31OSnrxDDhZeltrd7Duo";
 	private static final String consumerKey = "G8zZOeZpML3R55IcXq2Z8g";
 	private static final String host = "localhost";
-	private static final String user = "fuwjax";
+	private static final String username = "fuwjax";
 	private static final String password = "";
 	private static final String schema = "common";
 	private static final String database = "mya";
 	private static final String root = "src/main/html";
 	
-
-	public static UserMentionEntity findMention(final Status status, final long id) {
+	public static UserMentionEntity findMention(final Status status, final Long id) {
 		for(UserMentionEntity user : status.getUserMentionEntities()) {
 			if(user.getId() == id) {
 				return user;
@@ -72,7 +70,8 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	
 	private final Dashboard dashboard = new Dashboard();
 
-	public void close() throws Exception {
+	@Override
+   public void close() throws Exception {
 		dashboard.close();
 		bot.close();
 		db.close();
@@ -96,38 +95,34 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 			}
 			db.savePlayer(user);
 			Player player = getPlayer(user.getId());
-			if(!player.isFollowing()) {
-				user = bot.follow(user.getId());
-				db.followingPlayer(user.getId());
-				player.setFollowing(true);
-				player.setUser(user);
-			}
+			player.setUser(user);
 			List<String> tags = tags(status);
 			if(findTag(status, "imet") != null) {
+				follow(player);
 				tags.addAll(player.getTags());
 				db.saveStatus(status, tags);
 				for(UserMentionEntity mention : status.getUserMentionEntities()) {
-					if(mention.getId() != bot.getId()) {
+					if(mention.getId() != bot.getId() && mention.getId() != user.getId()) {
 						db.saveMention(status, mention, tags);
 					}
 				}
-				UserMentionEntity mention = findMention(status, player.getTargetUserId());
-				if(player.getTargetUserId() == null){
-					player.setTargetUserId(newTarget(status, "Your score is "+db.getPoints(user.getId())+"."));
-				}else if(mention != null) {
-					player.setTargetUserId(newTarget(status, "You tagged " + mention.getName() + "!"));
-				} else {
-					bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+".");
-				}
 			} else if(findMention(status, bot.getId()) != null) {
+				follow(player);
 				db.saveStatus(status, tags);
 				String game = db.setGame(status);
 				player.setTags(tags);
 				player.setGame(game);
 				if(game == null) {
-					bot.replyTo(status, "Thanks for playing MetYouAt. You've opted out of bonus tagging, but you can still score points by tagging people with #IMet.");
+					bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points. Join a game for bonuses.");
 				} else {
-					player.setTargetUserId(newTarget(status, "Your score is "+db.getPoints(user.getId())+"."));
+					Long targetUserId = db.newTarget(user);
+					if(targetUserId == null) {
+						bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points.");
+					} else {
+						Player target = getPlayer(targetUserId);
+						bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points. Your bonus tag: ", new URL(target.getOriginalProfileImageURL()));
+					}
+					player.setTargetUserId(targetUserId);
 				}
 			}
 		} catch(IllegalStateException | TwitterException | IOException | SQLException e) {
@@ -135,8 +130,17 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 		}
 	}
 
+	private void follow(Player player) throws TwitterException, SQLException {
+	   if(!player.isFollowing()) {
+	   	User user = bot.follow(player.getId());
+	   	db.followingPlayer(player.getId());
+	   	player.setFollowing(true);
+	   	player.setUser(user);
+	   }
+   }
+
 	public void connect() throws Exception {
-		db.connect(host, user, password, schema, database);
+		db.connect(host, username, password, schema, database);
 		bot.connect(consumerKey, consumerSecret, accessToken, accessTokenSecret);
 		dashboard.connect(port, Paths.get(root), db);
 	}
@@ -148,16 +152,5 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 			players.put(id, player);
 		}
 		return player;
-	}
-
-	private Long newTarget(final Status status, final String prefix) throws TwitterException, IOException, MalformedURLException, SQLException {
-		Long targetUserId = db.newTarget(status.getUser());
-		if(targetUserId == null) {
-			bot.replyTo(status, prefix + "Your score is "+db.getPoints(status.getUser().getId())+". Tag people with #IMet to score points.");
-		} else {
-			Player target = getPlayer(targetUserId);
-			bot.replyTo(status, prefix + " Tag people with #IMet to score points. Your bonus tag: ", new URL(target.getOriginalProfileImageURL()));
-		}
-		return targetUserId;
 	}
 }

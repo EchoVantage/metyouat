@@ -1,11 +1,11 @@
 CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
 
---DROP TABLE IF EXISTS player, status, statusTag, met, metTag CASCADE;
+DROP TABLE IF EXISTS player, status, statusTag, met, metTag CASCADE;
 CREATE TABLE IF NOT EXISTS player(id BIGINT PRIMARY KEY, screenName TEXT, name TEXT, originalProfileImageURL TEXT, following BOOLEAN);
 
 CREATE TABLE IF NOT EXISTS status(id BIGINT PRIMARY KEY, playerId BIGINT NOT NULL REFERENCES player, ts BIGINT NOT NULL, message TEXT NOT NULL);
 
---ALTER TABLE player ADD gameStatusId BIGINT REFERENCES status, ADD game CITEXT, ADD targetPlayerId BIGINT;
+ALTER TABLE player ADD gameStatusId BIGINT REFERENCES status, ADD game CITEXT, ADD targetPlayerId BIGINT;
 
 CREATE TABLE IF NOT EXISTS statusTag(id SERIAL PRIMARY KEY, statusId BIGINT NOT NULL REFERENCES status, tag CITEXT NOT NULL, UNIQUE (statusId, tag));
 
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS metTag(id SERIAL PRIMARY KEY, metId BIGINT NOT NULL R
 
 CREATE OR REPLACE VIEW points AS SELECT targeter.playerId as playerId, count(targeter.targeted) as finds, count(target.targeted) as founds, count(target.playerId) as connections FROM met AS targeter JOIN met as target ON targeter.playerId=target.targetPlayerId AND targeter.targetPlayerId=target.playerId WHERE targeter.statusId IS NOT NULL AND target.statusId IS NOT NULL GROUP BY targeter.playerId;
 
-CREATE OR REPLACE VIEW leaderboard AS SELECT player.id as playerId, screenName, name, originalProfileImageURL, game, finds, founds, connections FROM player LEFT JOIN points ON player.id=points.playerId WHERE player.following;
+CREATE OR REPLACE VIEW leaderboard AS SELECT player.id as playerId, screenName, name, originalProfileImageURL, game, coalesce(finds,0) as finds, coalesce(founds,0) as founds, coalesce(connections,0) as connections FROM player LEFT JOIN points ON player.id=points.playerId WHERE player.following;
 
 CREATE OR REPLACE VIEW feed AS SELECT screenName, name, originalProfileImageURL, game, ts, message FROM status LEFT JOIN player ON player.id=status.playerId;
 
@@ -176,7 +176,7 @@ LANGUAGE sql;
 
 CREATE OR REPLACE FUNCTION getLeaderboard(game TEXT) RETURNS TABLE(playerId BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT, finds BIGINT, founds BIGINT, connections BIGINT, points BIGINT) AS
 $$
-SELECT playerId, screenName, name, originalProfileImageURL, finds, founds, connections, finds*9+founds*4+connections as points FROM leaderboard WHERE leaderboard.game=$1 ORDER BY points DESC LIMIT 10;
+SELECT playerId, screenName, name, originalProfileImageURL, finds, founds, connections, finds*9+founds*4+connections as points FROM leaderboard WHERE leaderboard.game=$1 AND connections > 0 ORDER BY points DESC LIMIT 10;
 $$
 LANGUAGE sql;
 

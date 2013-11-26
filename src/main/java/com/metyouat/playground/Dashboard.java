@@ -89,7 +89,6 @@ public class Dashboard implements Container, AutoCloseable{
 
 	@Override
 	public void handle(Request req, Response resp) {
-		System.out.println(req);
 		try {
 			if(req.getPath().getPath(0, 1).equals("/api")){
 				List<Map<String,Object>> list;
@@ -106,6 +105,7 @@ public class Dashboard implements Container, AutoCloseable{
 						return;
 				}
 				byte[] serial = serial(list);
+			   resp.setValue(CACHE_CONTROL, "no-cache");
 				serve(req, resp, serial, System.currentTimeMillis(), MimeType.json);
 			}else{
 				serveStatic(req, resp);
@@ -115,7 +115,7 @@ public class Dashboard implements Container, AutoCloseable{
 		}
 	}
 
-	private byte[] serial(List<Map<String, Object>> list) {
+	private static byte[] serial(List<Map<String, Object>> list) {
 		StringBuilder builder = new StringBuilder("[");
 		boolean first = true;
 		for(Map<String,Object> o: list){
@@ -147,6 +147,7 @@ public class Dashboard implements Container, AutoCloseable{
 	   byte[] bytes = Files.readAllBytes(path);
 	   long lastModified = Files.getLastModifiedTime(path).toMillis();
 	   MimeType contentType = MimeType.of(path.toString());
+	   resp.setValue(CACHE_CONTROL, "private, max-age=" + ONE_WEEK);
 	   serve(req, resp, bytes, lastModified, contentType);
    }
 
@@ -155,7 +156,6 @@ public class Dashboard implements Container, AutoCloseable{
 	   resp.setContentType(contentType.toString());
 	   resp.setValue(ETAG, '"' + eTag + '"');
 	   resp.setDate(LAST_MODIFIED, lastModified);
-	   resp.setValue(CACHE_CONTROL, "private, max-age=" + ONE_WEEK);
 	   if(isIn(req.getValue(IF_NONE_MATCH), eTag) || !isModifiedSince(req.getDate(IF_MODIFIED_SINCE), lastModified)) {
 	   	resp.setStatus(NOT_MODIFIED);
 	   	resp.close();

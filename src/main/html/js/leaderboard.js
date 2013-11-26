@@ -1,4 +1,8 @@
-angular.module('MetYouAt', []);
+angular.module('MetYouAt', []).filter('fileSuffix',function(){
+	return function(text, suffix){
+		return text.substring(0,text.lastIndexOf('.')) + '_' + suffix + text.substring(text.lastIndexOf('.'));
+	}
+});
 
 /*
 function MyaStream($scope) {
@@ -119,17 +123,21 @@ function MyaLeaderboard($scope) {
 */
 	
 function MyaStream($scope, $timeout, $http) {
-	$timeout(function(){
+	var refreshFeed = function(){
 		$http.get('/api/feed/CommonDesk').success(function(data){
 			$scope.feed = data;
 		});
-	}, 1000);
+		$timeout(refreshFeed, 10000);
+	}
+	refreshFeed();
 }
 
 function MyaLeaderboard($scope, $timeout, $http) {
-	$timeout(function(){
+	var refreshLeaderboard = function(){
 		$http.get('/api/leaderboard/CommonDesk').success(function(data){
 			$scope.leaderboard = data;
 		});
-	}, 1000);
+		$timeout(refreshLeaderboard, 10000);
+	}
+	refreshLeaderboard();
 }

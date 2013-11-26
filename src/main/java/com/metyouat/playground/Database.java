@@ -116,8 +116,11 @@ public class Database implements AutoCloseable {
 	public long getPoints(final long playerId) throws SQLException {
 		getPoints.setLong(1, playerId);
 		try(ResultSet r = getPoints.executeQuery()) {
-			r.next();
-			return r.getLong("points");
+			if(r.next()){
+				return r.getLong("points");
+			}else{
+				return 0;
+			}
 		}
 	}
 
