@@ -91,7 +91,7 @@ BEGIN
     INSERT INTO met(playerId, targetPlayerId, statusId) VALUES ($1, $2, $3) RETURNING id INTO metId;
     RETURN metId;
 EXCEPTION WHEN unique_violation THEN
-	UPDATE met (statusId) VALUES ($3) WHERE met.playerId=$1 AND met.targetPlayerId=$2 AND met.statusId IS NULL;
+	UPDATE met SET statusId=$3 WHERE met.playerId=$1 AND met.targetPlayerId=$2 AND met.statusId IS NULL;
     SELECT id INTO metId FROM met WHERE met.playerId=$1 AND met.targetPlayerId=$2;
     RETURN metId;
 END
@@ -162,3 +162,10 @@ END
 $$
 LANGUAGE plpgsql;
 
+CREATE OR REPLACE VIEW points AS SELECT targeter.playerId as playerId, count(targeter.targeted) as finds, count(target.targeted) as founds, count(target.playerId) as connections FROM met AS targeter JOIN met as target ON targeter.playerId=target.targetPlayerId AND targeter.targetPlayerId=target.playerId WHERE targeter.statusId IS NOT NULL AND target.statusId IS NOT NULL GROUP BY targeter.playerId;
+
+CREATE OR REPLACE FUNCTION getPoints(playerId BIGINT) RETURNS BIGINT AS
+$$
+SELECT finds*10+founds*5+connections FROM points WHERE points.playerId=$1;
+$$
+LANGUAGE sql;

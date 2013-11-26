@@ -11,51 +11,51 @@ public class Player {
 	private Long targetUserId;
 	private boolean following;
 
-	public Player(long id, String screenName, String name, String originalProfileImageURL, boolean following, String game, Long targetUserId){
+	public Player(final long id, final String screenName, final String name, final String originalProfileImageURL, final boolean following, final String game, final Long targetUserId) {
 		this.originalProfileImageURL = originalProfileImageURL;
 		this.following = following;
 		this.game = game;
 		this.targetUserId = targetUserId;
 	}
 
-	public List<String> getTags() {
-	   return tags;
-   }
-	
-	public boolean isFollowing() {
-	   return following;
-   }
-	
-	public void setFollowing(boolean following) {
-	   this.following = following;
-   }
-
-	public Long getTargetUserId() {
-	   return targetUserId;
-   }
+	public String getGame() {
+		return game;
+	}
 
 	public String getOriginalProfileImageURL() {
-	   return originalProfileImageURL;
-   }
+		return originalProfileImageURL;
+	}
 
-	public String getGame() {
-	   return game;
-   }
+	public List<String> getTags() {
+		return tags;
+	}
 
-	public void setTargetUserId(Long targetUserId) {
-		this.targetUserId = targetUserId;
-   }
+	public Long getTargetUserId() {
+		return targetUserId;
+	}
 
-	public void setTags(List<String> tags) {
-		this.tags = tags;
-   }
+	public boolean isFollowing() {
+		return following;
+	}
 
-	public void setGame(String game) {
+	public void setFollowing(final boolean following) {
+		this.following = following;
+	}
+
+	public void setGame(final String game) {
 		this.game = game;
-   }
+	}
 
-	public void setUser(User user) {
+	public void setTags(final List<String> tags) {
+		this.tags = tags;
+	}
+
+	public void setTargetUserId(final Long targetUserId) {
+		this.targetUserId = targetUserId;
+	}
+
+	public void setUser(final User user) {
 		this.originalProfileImageURL = user.getOriginalProfileImageURL();
-   }
+	}
 
 }
