@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS metTag(id SERIAL PRIMARY KEY, metId BIGINT NOT NULL R
 
 CREATE OR REPLACE VIEW points AS SELECT targeter.playerId as playerId, count(targeter.targeted) as finds, count(target.targeted) as founds, count(target.playerId) as connections FROM met AS targeter JOIN met as target ON targeter.playerId=target.targetPlayerId AND targeter.targetPlayerId=target.playerId WHERE targeter.statusId IS NOT NULL AND target.statusId IS NOT NULL GROUP BY targeter.playerId;
 
-CREATE OR REPLACE VIEW leaderboard AS SELECT player.id as playerId, screenName, name, originalProfileImageURL, game, finds, founds, connections FROM player LEFT JOIN points ON player.id=points.playerId;
+CREATE OR REPLACE VIEW leaderboard AS SELECT player.id as playerId, screenName, name, originalProfileImageURL, game, finds, founds, connections FROM player LEFT JOIN points ON player.id=points.playerId WHERE player.following;
+
+CREATE OR REPLACE VIEW feed AS SELECT screenName, name, originalProfileImageURL, game, ts, message FROM status LEFT JOIN player ON player.id=status.playerId;
 
 CREATE OR REPLACE FUNCTION savePlayer(id BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT) RETURNS VOID AS
 $$
@@ -166,14 +168,20 @@ END
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION getPoints(playerId BIGINT) RETURNS TABLE(finds BIGINT, founds BIGINT, connections BIGINT) AS
+CREATE OR REPLACE FUNCTION getPoints(playerId BIGINT) RETURNS TABLE(finds BIGINT, founds BIGINT, connections BIGINT, points BIGINT) AS
 $$
-SELECT finds, founds, connections FROM points WHERE points.playerId=$1;
+SELECT finds, founds, connections, finds*9+founds*4+connections as points FROM points WHERE points.playerId=$1;
 $$
 LANGUAGE sql;
 
-CREATE OR REPLACE FUNCTION getLeaderboard(game TEXT) RETURNS TABLE(playerId BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT, finds BIGINT, founds BIGINT, connections BIGINT) AS
+CREATE OR REPLACE FUNCTION getLeaderboard(game TEXT) RETURNS TABLE(playerId BIGINT, screenName TEXT, name TEXT, originalProfileImageURL TEXT, finds BIGINT, founds BIGINT, connections BIGINT, points BIGINT) AS
 $$
-SELECT playerId, screenName, name, originalProfileImageURL, finds, founds, connections FROM leaderboard WHERE leaderboard.game=$1;
+SELECT playerId, screenName, name, originalProfileImageURL, finds, founds, connections, finds*9+founds*4+connections as points FROM leaderboard WHERE leaderboard.game=$1 ORDER BY points DESC LIMIT 10;
+$$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION getFeed(game TEXT) RETURNS TABLE(screenName TEXT, name TEXT, originalProfileImageURL TEXT, ts BIGINT, message TEXT) AS
+$$
+SELECT screenName, name, originalProfileImageURL, ts, message FROM feed WHERE feed.game=$1 ORDER BY ts DESC LIMIT 20;
 $$
 LANGUAGE sql;

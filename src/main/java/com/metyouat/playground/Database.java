@@ -11,7 +11,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import twitter4j.HashtagEntity;
 import twitter4j.Status;
@@ -32,6 +34,8 @@ public class Database implements AutoCloseable {
 	private PreparedStatement followingPlayer;
 	private PreparedStatement saveMention;
 	private PreparedStatement getPoints;
+	private PreparedStatement getLeaderboard;
+	private PreparedStatement getFeed;
 
 	@Override
 	public void close() throws Exception {
@@ -46,6 +50,8 @@ public class Database implements AutoCloseable {
 		getPlayer.close();
 		getStatusTags.close();
 		getPoints.close();
+		getLeaderboard.close();
+		getFeed.close();
 	}
 
 	public void connect(final String host, final String user, final String password, final String schema, final String database) throws SQLException {
@@ -88,6 +94,8 @@ public class Database implements AutoCloseable {
 		getStatusTags = c.prepareStatement("SELECT * FROM getStatusTags(?)");
 		followingPlayer = c.prepareStatement("SELECT followingPlayer(?)");
 		getPoints = c.prepareStatement("SELECT * FROM getPoints(?)");
+		getLeaderboard = c.prepareStatement("SELECT * FROM getLeaderboard(?)");
+		getFeed = c.prepareStatement("SELECT * FROM getFeed(?)");
 	}
 
 	public void followingPlayer(final long playerId) throws SQLException {
@@ -109,7 +117,33 @@ public class Database implements AutoCloseable {
 		getPoints.setLong(1, playerId);
 		try(ResultSet r = getPoints.executeQuery()) {
 			r.next();
-			return r.getLong("finds")*9+r.getLong("founds")*4+r.getLong("connections");
+			return r.getLong("points");
+		}
+	}
+
+	public List<Map<String,Object>> getLeaderboard(final String game) throws SQLException {
+		getLeaderboard.setString(1, game);
+		try(ResultSet r = getLeaderboard.executeQuery()) {
+			return rip(r);
+		}
+	}
+
+	private List<Map<String, Object>> rip(ResultSet r) throws SQLException {
+	   List<Map<String,Object>> ret = new ArrayList<>();
+	   while(r.next()){
+	   	Map<String,Object> o = new HashMap<>();
+	   	for(int i=0;i<r.getMetaData().getColumnCount();i++){
+	   		o.put(r.getMetaData().getColumnLabel(i+1), r.getObject(i+1));
+	   	}
+	   	ret.add(o);
+	   }
+	   return ret;
+   }
+
+	public List<Map<String, Object>> getFeed(final String game) throws SQLException {
+		getFeed.setString(1, game);
+		try(ResultSet r = getFeed.executeQuery()) {
+			return rip(r);
 		}
 	}
 
@@ -158,6 +192,8 @@ public class Database implements AutoCloseable {
 			}
 		}
 		String game = first == null ? null : first.getText();
+		//XXX: For today's game...
+		game = "CommonDesk";
 		setGame(status.getUser().getId(), status.getId(), game);
 		return game;
 	}
