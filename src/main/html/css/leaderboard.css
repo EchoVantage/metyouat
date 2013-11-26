@@ -1,0 +1,16 @@
+#wrap {
+	padding: 0 15px;
+	width: 100%;
+}
+
+#instructions {
+	font-size: 2em;
+}
+
+#leaderboard ol > li {
+	font-size: 1.5em;
+}
+
+#leaderboard ol > li > * {
+	font-size: 0.5em;
+}
