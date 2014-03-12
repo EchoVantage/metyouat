@@ -118,9 +118,8 @@ public class Database implements AutoCloseable {
 		try(ResultSet r = getPoints.executeQuery()) {
 			if(r.next()){
 				return r.getLong("points");
-			}else{
-				return 0;
 			}
+			return 0;
 		}
 	}
 

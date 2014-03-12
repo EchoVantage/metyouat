@@ -92,7 +92,8 @@ public class TwitterBotImpl implements TwitterBot, UserstreamHandler, AutoClosea
 		client.process();
 	}
 
-	public void close() throws Exception {
+	@Override
+   public void close() throws Exception {
 		client.stop();
 		executorService.shutdown();
 		twitter.shutdown();

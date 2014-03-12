@@ -6,7 +6,6 @@ import twitter4j.IDs;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
-import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 
 public class OAuthExample {
@@ -17,7 +16,7 @@ public class OAuthExample {
 		System.out.println(requestToken);
 		System.out.println(requestToken.getAuthenticationURL());
 		System.in.read();
-		AccessToken accessToken = twitter.getOAuthAccessToken(requestToken);
+		twitter.getOAuthAccessToken(requestToken);
 		IDs followersIDs = twitter.getFollowersIDs("mikedeck", 0);
 		System.out.println(followersIDs);
 	}

@@ -26,6 +26,7 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	private static final String password = "";
 	private static final String schema = "common";
 	private static final String database = "mya";
+	private static final String leaderboardHost = "192.168.1.230";
 	private static final String root = "src/main/html";
 	
 	public static UserMentionEntity findMention(final Status status, final Long id) {
@@ -55,9 +56,7 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 	public static List<String> tags(final Status status) {
 		List<String> tags = new ArrayList<>();
 		for(HashtagEntity tag : status.getHashtagEntities()) {
-			if(!"imet".equalsIgnoreCase(tag.getText())) {
-				tags.add(tag.getText());
-			}
+			tags.add(tag.getText());
 		}
 		return tags;
 	}
@@ -68,46 +67,29 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 
 	private final Database db = new Database();
 	
-	private final Dashboard dashboard = new Dashboard();
+	private final Leaderboard leaderboard = new Leaderboard();
 
 	@Override
    public void close() throws Exception {
-		dashboard.close();
+		leaderboard.close();
 		bot.close();
 		db.close();
 	}
 
 	@Override
 	public void onFriend(long friendId) {
-		try {
-			db.followingPlayer(friendId);
-		} catch(SQLException e) {
-			e.printStackTrace();
-		}
+		// ignore
 	}
 
 	@Override
 	public void onStatus(Status status) {
 		try {
-			User user = status.getUser();
-			if(user.getId() == bot.getId()) {
-				return;
-			}
-			db.savePlayer(user);
-			Player player = getPlayer(user.getId());
-			player.setUser(user);
-			List<String> tags = tags(status);
-			if(findTag(status, "imet") != null) {
-				follow(player);
-				tags.addAll(player.getTags());
-				db.saveStatus(status, tags);
-				for(UserMentionEntity mention : status.getUserMentionEntities()) {
-					if(mention.getId() != bot.getId() && mention.getId() != user.getId()) {
-						db.saveMention(status, mention, tags);
-					}
-				}
-			} else if(findMention(status, bot.getId()) != null) {
-				follow(player);
+			if(findMention(status, bot.getId()) != null && status.getUserMentionEntities().length > 1) {
+				User user = status.getUser();
+				db.savePlayer(user);
+				Player player = getPlayer(user.getId());
+				player.setUser(user);
+				List<String> tags = tags(status);
 				db.saveStatus(status, tags);
 				String game = db.setGame(status);
 				player.setTags(tags);
@@ -120,7 +102,7 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 						bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points.");
 					} else {
 						Player target = getPlayer(targetUserId);
-						bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points. Your bonus tag: ", new URL(target.getOriginalProfileImageURL()));
+						bot.replyTo(status, "Your score is "+db.getPoints(user.getId())+". Tag people with #IMet to score points. Find this player: ", new URL(target.getOriginalProfileImageURL()));
 					}
 					player.setTargetUserId(targetUserId);
 				}
@@ -130,19 +112,10 @@ public class BotMain implements TwitterBot.Callback, AutoCloseable {
 		}
 	}
 
-	private void follow(Player player) throws TwitterException, SQLException {
-	   if(!player.isFollowing()) {
-	   	User user = bot.follow(player.getId());
-	   	db.followingPlayer(player.getId());
-	   	player.setFollowing(true);
-	   	player.setUser(user);
-	   }
-   }
-
 	public void connect() throws Exception {
 		db.connect(host, username, password, schema, database);
 		bot.connect(consumerKey, consumerSecret, accessToken, accessTokenSecret);
-		dashboard.connect(port, Paths.get(root), db);
+		leaderboard.connect(leaderboardHost, port, Paths.get(root), db);
 	}
 
 	private Player getPlayer(final long id) throws SQLException {

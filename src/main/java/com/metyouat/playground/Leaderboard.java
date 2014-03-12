@@ -30,7 +30,7 @@ import org.simpleframework.transport.connect.SocketConnection;
 
 import com.google.common.base.Charsets;
 
-public class Dashboard implements Container, AutoCloseable{
+public class Leaderboard implements Container, AutoCloseable{
 	private static final int ONE_WEEK = 60 * 60 * 24 * 7; // 7 days in seconds
 	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 	private static MessageDigest MD2;
@@ -63,12 +63,12 @@ public class Dashboard implements Container, AutoCloseable{
 	private Path root;
 	private Database db;
 
-	public void connect(int port, Path root, Database db) throws IOException{
+	public void connect(String host, int port, Path root, Database db) throws IOException{
 		this.root = root;
 		this.db = db;
 		Server server = new ContainerServer(this);
 		connection = new SocketConnection(server);
-		connection.connect(new InetSocketAddress(port));
+		connection.connect(new InetSocketAddress(host, port));
 	}
 	
 	public static String eTag(byte[] bytes) {
